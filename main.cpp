@@ -288,9 +288,9 @@ struct Box {
   }
 };
 
-void searchSolution(const std::vector<PieceOrients> &pieceOrients,
-                    int currentPieceOrientsIdx, Box &box,
-                    std::vector<Box> &solutions) {
+void searchOnePieceAllPosOrient(const std::vector<PieceOrients> &pieceOrients,
+                                int currentPieceOrientsIdx, Box &box,
+                                std::vector<Box> &solutions) {
   // Found a solution
   if (currentPieceOrientsIdx == pieceOrients.size()) {
     solutions.push_back(box);
@@ -299,15 +299,16 @@ void searchSolution(const std::vector<PieceOrients> &pieceOrients,
 
   // For one piece, try all orientations
   for (const auto &p : pieceOrients[currentPieceOrientsIdx]) {
-    // Try to push the piece into the box
+    // For all positions in the box
     for (int x = 0; x < box.x - p.size_.x + 1; ++x) {
       for (int y = 0; y < box.y - p.size_.y + 1; ++y) {
         for (int z = 0; z < box.z - p.size_.z + 1; ++z) {
+          // Try to push the piece into the box
           bool success = box.tryPushPieceTo(p, {x, y, z});
           if (success) {
             // search for the next piece
-            searchSolution(pieceOrients, currentPieceOrientsIdx + 1, box,
-                           solutions);
+            searchOnePieceAllPosOrient(pieceOrients, currentPieceOrientsIdx + 1,
+                                       box, solutions);
             // Pop the piece
             box.popPiece();
           }
@@ -348,7 +349,7 @@ int main() {
   // Search for solutions
   Box box(4, 4, 2);
   std::vector<Box> solutions;
-  searchSolution(pieceOrients, 0, box, solutions);
+  searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions);
   std::cout << "Found " << solutions.size() << " solutions" << std::endl;
   std::cout << solutions[0];
 }
