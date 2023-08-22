@@ -103,8 +103,7 @@ public:
   // Print to ostream
   friend std::ostream &operator<<(std::ostream &os, const Piece &piece) {
     os << "ID: " << PieceNames[piece.id_] << ", size: [" << piece.size_.x
-       << ", " << piece.size_.y << ", " << piece.size_.z << "], points: ["
-       << piece.points_.size();
+       << ", " << piece.size_.y << ", " << piece.size_.z << "], points: [ ";
     for (const auto &p : piece.points_) {
       os << "(" << p.x << ", " << p.y << ", " << p.z << ") ";
     }
@@ -189,12 +188,12 @@ struct Box {
   int y;
   int z;
   Box(int x, int y, int z) : x(x), y(y), z(z) {
-    data = new PieceID[x * y * z];
+    data.resize(x * y * z);
     for (int i = 0; i < x * y * z; ++i) {
       data[i] = NONE;
     }
   }
-  PieceID *data;
+  std::vector<PieceID> data;
   bool isOccupied(int x, int y, int z) const {
     return data[x + y * this->x + z * this->x * this->y];
   }
@@ -262,7 +261,7 @@ struct Box {
     pieces.pop_back();
   }
 
-  void printVisualize(std::ostream &os) {
+  void printVisualize(std::ostream &os) const {
     for (int x = 0; x < this->x; ++x) {
       for (int z = 0; z < this->z; ++z) {
         for (int y = 0; y < this->y; ++y) {
@@ -275,19 +274,25 @@ struct Box {
     os << std::endl;
   }
   std::vector<PiecePos> pieces;
+
+  // Output to ostream
+  friend std::ostream &operator<<(std::ostream &os, const Box &box) {
+    os << "Box: [" << box.x << ", " << box.y << ", " << box.z
+       << "], pieces: " << box.pieces.size() << std::endl;
+    for (const auto &p : box.pieces) {
+      std::cout << "  Pos (" << p.pos.x << ", " << p.pos.y << ", " << p.pos.z
+                << ") " << *p.piece << std::endl;
+    }
+    box.printVisualize(os);
+    return os;
+  }
 };
 
 void searchSolution(const std::vector<PieceOrients> &pieceOrients,
                     int currentPieceOrientsIdx, Box &box,
                     std::vector<Box> &solutions) {
+  // Found a solution
   if (currentPieceOrientsIdx == pieceOrients.size()) {
-    // Found a solution
-    std::cout << "Found a solution" << std::endl;
-    box.printVisualize(std::cout);
-    for (const auto &p : box.pieces) {
-      std::cout << "  " << *p.piece << " at (" << p.pos.x << ", " << p.pos.y
-                << ", " << p.pos.z << ")" << std::endl;
-    }
     solutions.push_back(box);
     return;
   }
@@ -300,7 +305,7 @@ void searchSolution(const std::vector<PieceOrients> &pieceOrients,
         for (int z = 0; z < box.z - p.size_.z + 1; ++z) {
           bool success = box.tryPushPieceTo(p, {x, y, z});
           if (success) {
-            // Found a position to push the piece
+            // search for the next piece
             searchSolution(pieceOrients, currentPieceOrientsIdx + 1, box,
                            solutions);
             // Pop the piece
@@ -312,41 +317,38 @@ void searchSolution(const std::vector<PieceOrients> &pieceOrients,
   }
 }
 
-int main() {
-  Piece p0{A,
-           {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 1}, {0, 1, 1}}};
-  Piece p1{B, {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {2, 1, 1}}};
-  Piece p2{C, {{0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {1, 1, 1}}};
-  Piece p3{D, {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {0, 0, 1}}};
-  Piece p4{E,
-           {{0, 0, 0},
-            {1, 0, 0},
-            {2, 0, 0},
-            {0, 1, 0},
-            {1, 1, 0},
-            {2, 1, 0},
-            {2, 0, 1}}};
-  Piece p5{F,
-           {{0, 0, 0}, {2, 0, 0}, {0, 1, 0}, {1, 1, 0}, {2, 1, 0}, {2, 0, 1}}};
+Point operator""_p(const char *str, std::size_t len) {
+  assert(len == 3);
+  return {str[0] - '0', str[1] - '0', str[2] - '0'};
+}
 
-  std::vector<Piece> pieces{p4, p5, p0, p1, p2, p3};
+int main() {
+  std::vector<Piece> pieces{
+      Piece(E, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
+      Piece(F, {"000"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
+      Piece(A, {"000"_p, "100"_p, "010"_p, "001"_p, "101"_p, "011"_p}),
+      Piece(B, {"000"_p, "100"_p, "200"_p, "210"_p, "211"_p}),
+      Piece(C, {"000"_p, "100"_p, "110"_p, "111"_p}),
+      Piece(D, {"000"_p, "100"_p, "200"_p, "001"_p}),
+  };
+
   std::vector<PieceOrients> pieceOrients;
   for (const auto &p : pieces) {
     pieceOrients.push_back(allRotations(p));
   }
 
   // Dump all pieces
-  for (const auto &s : pieceOrients) {
-    std::cout << "Piece set: " << s.size() << std::endl;
-    for (const auto &p : s) {
-      std::cout << "  " << p << std::endl;
-    }
-  }
+  // for (const auto &s : pieceOrients) {
+  //   std::cout << "Piece set: " << s.size() << std::endl;
+  //   for (const auto &p : s) {
+  //     std::cout << "  " << p << std::endl;
+  //   }
+  // }
 
   // Search for solutions
   Box box(4, 4, 2);
   std::vector<Box> solutions;
   searchSolution(pieceOrients, 0, box, solutions);
-
   std::cout << "Found " << solutions.size() << " solutions" << std::endl;
+  std::cout << solutions[0];
 }
