@@ -175,6 +175,10 @@ struct Position {
   int x;
   int y;
   int z;
+  friend std::ostream &operator<<(std::ostream &os, const Position &pos) {
+    os << "(" << pos.x << ", " << pos.y << ", " << pos.z << ")";
+    return os;
+  }
 };
 
 struct PiecePos {
@@ -215,8 +219,16 @@ struct Box {
     return false;
   }
 
+  bool isOutOfBound(const Position &pos) const {
+    return pos.x < 0 || pos.x >= x || pos.y < 0 || pos.y >= y || pos.z < 0 ||
+           pos.z >= z;
+  }
+
   bool tryPushPieceTo(const Piece &piece, const Position &pos) {
     for (const auto &p : piece.points_) {
+      if (isOutOfBound({pos.x + p.x, pos.y + p.y, pos.z + p.z})) {
+        return false;
+      }
       if (isOccupied(pos.x + p.x, pos.y + p.y, pos.z + p.z)) {
         return false;
       }
@@ -273,6 +285,20 @@ struct Box {
     }
     os << std::endl;
   }
+
+  Position findFirstEmptyCell() {
+    for (int x = 0; x < this->x; ++x) {
+      for (int y = 0; y < this->y; ++y) {
+        for (int z = 0; z < this->z; ++z) {
+          if (!isOccupied(x, y, z)) {
+            return {x, y, z};
+          }
+        }
+      }
+    }
+    return {-1, -1, -1};
+  }
+
   std::vector<PiecePos> pieces;
 
   // Output to ostream
@@ -318,6 +344,53 @@ void searchOnePieceAllPosOrient(const std::vector<PieceOrients> &pieceOrients,
   }
 }
 
+void searchNextCellPiece(int level,
+                         const std::vector<PieceOrients> &pieceOrients,
+                         Box &box, std::vector<Box> &solutions) {
+  auto printIndent = [level]() {
+    for (int i = 0; i < level; ++i) {
+      std::cout << "  ";
+    }
+  };
+
+  // Found a solution
+  if (pieceOrients.empty()) {
+    solutions.push_back(box);
+    return;
+  }
+
+  // Find next empty cell in the box
+  Position emptyCell = box.findFirstEmptyCell();
+  // printIndent();
+  // std::cout << "Empty cell pos: " << emptyCell << std::endl;
+
+  // For each piece, try all orientations, and push to the empty cell
+  // For each piece
+  for (int i = 0; i < pieceOrients.size(); ++i) {
+    // For each orientation
+    for (const auto &p : pieceOrients[i]) {
+      // Calculate offset: the first point of the piece
+      // should be at the empty cell
+      Position posToTry = {emptyCell.x - p.points_[0].x,
+                           emptyCell.y - p.points_[0].y,
+                           emptyCell.z - p.points_[0].z};
+      // Try to push the piece into the box
+      // printIndent();
+      // std::cout << "  Trying pos" << posToTry << ", " << p << std::endl;
+      bool success = box.tryPushPieceTo(p, posToTry);
+      if (success) {
+        // Remove the piece from the piece set
+        std::vector<PieceOrients> newPieceOrients = pieceOrients;
+        newPieceOrients.erase(newPieceOrients.begin() + i);
+        // search for the next piece
+        searchNextCellPiece(level + 1, newPieceOrients, box, solutions);
+        // Pop the piece
+        box.popPiece();
+      }
+    }
+  }
+}
+
 Point operator""_p(const char *str, std::size_t len) {
   assert(len == 3);
   return {str[0] - '0', str[1] - '0', str[2] - '0'};
@@ -339,17 +412,18 @@ int main() {
   }
 
   // Dump all pieces
-  // for (const auto &s : pieceOrients) {
-  //   std::cout << "Piece set: " << s.size() << std::endl;
-  //   for (const auto &p : s) {
-  //     std::cout << "  " << p << std::endl;
-  //   }
-  // }
+  for (const auto &s : pieceOrients) {
+    std::cout << "Piece set: " << s.size() << std::endl;
+    for (const auto &p : s) {
+      std::cout << "  " << p << std::endl;
+    }
+  }
 
   // Search for solutions
   Box box(4, 4, 2);
   std::vector<Box> solutions;
-  searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions);
+  /* searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions); */
+  searchNextCellPiece(0, pieceOrients, box, solutions);
   std::cout << "Found " << solutions.size() << " solutions" << std::endl;
   std::cout << solutions[0];
 }
