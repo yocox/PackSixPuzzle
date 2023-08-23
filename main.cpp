@@ -121,6 +121,7 @@ public:
 
 // PieceSet is all possible orientations of a piece
 using PieceOrients = std::set<Piece>;
+using PieceOrientsPtr = std::set<Piece> *;
 
 // Generate all 24 rotations of a piece
 // (6 different x-axis orientation * 4 different rotations around the x-axis)
@@ -345,7 +346,7 @@ void searchOnePieceAllPosOrient(const std::vector<PieceOrients> &pieceOrients,
 }
 
 void searchNextCellPiece(int level,
-                         const std::vector<PieceOrients> &pieceOrients,
+                         const std::vector<PieceOrientsPtr> &pieceOrientPtrs,
                          Box &box, std::vector<Box> &solutions) {
   auto printIndent = [level]() {
     for (int i = 0; i < level; ++i) {
@@ -354,7 +355,7 @@ void searchNextCellPiece(int level,
   };
 
   // Found a solution
-  if (pieceOrients.empty()) {
+  if (pieceOrientPtrs.empty()) {
     solutions.push_back(box);
     return;
   }
@@ -366,9 +367,9 @@ void searchNextCellPiece(int level,
 
   // For each piece, try all orientations, and push to the empty cell
   // For each piece
-  for (int i = 0; i < pieceOrients.size(); ++i) {
+  for (int i = 0; i < pieceOrientPtrs.size(); ++i) {
     // For each orientation
-    for (const auto &p : pieceOrients[i]) {
+    for (const auto &p : *pieceOrientPtrs[i]) {
       // Calculate offset: the first point of the piece
       // should be at the empty cell
       Position posToTry = {emptyCell.x - p.points_[0].x,
@@ -380,7 +381,7 @@ void searchNextCellPiece(int level,
       bool success = box.tryPushPieceTo(p, posToTry);
       if (success) {
         // Remove the piece from the piece set
-        std::vector<PieceOrients> newPieceOrients = pieceOrients;
+        std::vector<PieceOrientsPtr> newPieceOrients = pieceOrientPtrs;
         newPieceOrients.erase(newPieceOrients.begin() + i);
         // search for the next piece
         searchNextCellPiece(level + 1, newPieceOrients, box, solutions);
@@ -398,18 +399,23 @@ Point operator""_p(const char *str, std::size_t len) {
 
 int main() {
   std::vector<Piece> pieces{
-      Piece(E, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
-      Piece(F, {"000"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
-      Piece(A, {"000"_p, "100"_p, "010"_p, "001"_p, "101"_p, "011"_p}),
-      Piece(B, {"000"_p, "100"_p, "200"_p, "210"_p, "211"_p}),
       Piece(C, {"000"_p, "100"_p, "110"_p, "111"_p}),
       Piece(D, {"000"_p, "100"_p, "200"_p, "001"_p}),
+      Piece(B, {"000"_p, "100"_p, "200"_p, "210"_p, "211"_p}),
+      Piece(F, {"000"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
+      Piece(A, {"000"_p, "100"_p, "010"_p, "001"_p, "101"_p, "011"_p}),
+      Piece(E, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
   };
 
   std::vector<PieceOrients> pieceOrients;
   for (const auto &p : pieces) {
     pieceOrients.push_back(allRotations(p));
   }
+
+  std::vector<PieceOrientsPtr> pieceOrientPtrs;
+  std::transform(pieceOrients.begin(), pieceOrients.end(),
+                 std::back_inserter(pieceOrientPtrs),
+                 [](PieceOrients &s) { return &s; });
 
   // Dump all pieces
   for (const auto &s : pieceOrients) {
@@ -423,7 +429,7 @@ int main() {
   Box box(4, 4, 2);
   std::vector<Box> solutions;
   /* searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions); */
-  searchNextCellPiece(0, pieceOrients, box, solutions);
+  searchNextCellPiece(0, pieceOrientPtrs, box, solutions);
   std::cout << "Found " << solutions.size() << " solutions" << std::endl;
   std::cout << solutions[0];
 }
