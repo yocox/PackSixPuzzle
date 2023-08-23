@@ -287,6 +287,7 @@ struct Box {
     os << std::endl;
   }
 
+  // TODO(yoco): an optional initial position
   Position findFirstEmptyCell() {
     for (int x = 0; x < this->x; ++x) {
       for (int y = 0; y < this->y; ++y) {
@@ -345,6 +346,7 @@ void searchOnePieceAllPosOrient(const std::vector<PieceOrients> &pieceOrients,
   }
 }
 
+// TODO(yoco): an optional initial position
 void searchNextCellPiece(int level,
                          const std::vector<PieceOrientsPtr> &pieceOrientPtrs,
                          Box &box, std::vector<Box> &solutions) {
@@ -361,6 +363,7 @@ void searchNextCellPiece(int level,
   }
 
   // Find next empty cell in the box
+  // TODO(yoco): an optional initial position
   Position emptyCell = box.findFirstEmptyCell();
   // printIndent();
   // std::cout << "Empty cell pos: " << emptyCell << std::endl;
@@ -418,12 +421,12 @@ int main() {
                  [](PieceOrients &s) { return &s; });
 
   // Dump all pieces
-  for (const auto &s : pieceOrients) {
-    std::cout << "Piece set: " << s.size() << std::endl;
-    for (const auto &p : s) {
-      std::cout << "  " << p << std::endl;
-    }
-  }
+  // for (const auto &s : pieceOrients) {
+  //   std::cout << "Piece set: " << s.size() << std::endl;
+  //   for (const auto &p : s) {
+  //     std::cout << "  " << p << std::endl;
+  //   }
+  // }
 
   // Search for solutions
   Box box(4, 4, 2);
