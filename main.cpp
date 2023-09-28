@@ -6,8 +6,9 @@
 #include <utility>
 #include <vector>
 
-enum PieceID { NONE, A, B, C, D, E, F };
-const char *PieceNames[] = {".", "A", "B", "C", "D", "E", "F"};
+enum PieceID { NONE, A, B, C, D, E, F, G, H, I, J, K, L, M };
+const char *PieceNames[] = {".", "A", "B", "C", "D", "E", "F",
+                            "G", "H", "I", "J", "K", "L", "M"};
 
 // A point is a (x, y, z) coordinate
 struct Point {
@@ -131,31 +132,6 @@ PieceOrients allRotations(Piece p) {
 
   // 1st orientation, toward positive x-axis
   result.insert(p);
-  p.rotateX(); result.insert(p);
-  p.rotateX(); result.insert(p);
-  p.rotateX(); result.insert(p);
-  // 2nd orientation, toward positive y-axis
-  p.rotateZ(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  // 3rd orientation, toward negative x-axis
-  p.rotateZ(); result.insert(p);
-  p.rotateX(); result.insert(p);
-  p.rotateX(); result.insert(p);
-  p.rotateX(); result.insert(p);
-  // 4th orientation, toward negative y-axis
-  p.rotateZ(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  p.rotateY(); result.insert(p);
-  // 5th orientation, toward positive z-axis
-  p.rotateX(); result.insert(p);
-  p.rotateZ(); result.insert(p);
-  p.rotateZ(); result.insert(p);
-  p.rotateZ(); result.insert(p);
-  // 6th orientation, toward negative z-axis
-  p.rotateX().rotateX(); result.insert(p);
   p.rotateZ(); result.insert(p);
   p.rotateZ(); result.insert(p);
   p.rotateZ(); result.insert(p);
@@ -359,6 +335,9 @@ void searchNextCellPiece(int level,
   // Found a solution
   if (pieceOrientPtrs.empty()) {
     solutions.push_back(box);
+    std::cout << "Found a solution" << std::endl;
+    box.printVisualize(std::cout);
+    exit(1);
     return;
   }
 
@@ -401,14 +380,23 @@ Point operator""_p(const char *str, std::size_t len) {
 }
 
 int main() {
+  // clang-format off
   std::vector<Piece> pieces{
-      Piece(C, {"000"_p, "100"_p, "110"_p, "111"_p}),
-      Piece(D, {"000"_p, "100"_p, "200"_p, "001"_p}),
-      Piece(B, {"000"_p, "100"_p, "200"_p, "210"_p, "211"_p}),
-      Piece(F, {"000"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
-      Piece(A, {"000"_p, "100"_p, "010"_p, "001"_p, "101"_p, "011"_p}),
-      Piece(E, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
+      Piece(A, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "020"_p, "220"_p}),
+      Piece(B, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "220"_p}),
+      Piece(C, {"000"_p, "100"_p, "300"_p, "110"_p, "210"_p, "310"_p, "320"_p}),
+      Piece(D, {"000"_p, "100"_p, "010"_p, "110"_p, "120"_p}),
+      Piece(E, {"000"_p, "100"_p, "010"_p, "110"_p, "120"_p}),
+      Piece(F, {"000"_p, "100"_p, "010"_p, "110"_p, "020"_p}),
+      Piece(G, {"000"_p, "100"_p, "200"_p, "300"_p, "110"_p}),
+      Piece(H, {"000"_p, "100"_p, "200"_p, "010"_p}),
+      Piece(I, {"000"_p, "100"_p, "110"_p, "120"_p}),
+      Piece(J, {"000"_p, "100"_p, "010"_p, "020"_p}),
+      Piece(K, {"000"_p, "010"_p, "110"_p, "120"_p}),
+      Piece(L, {"000"_p, "100"_p, "010"_p}),
+      Piece(M, {"000"_p, "100"_p, "010"_p}),
   };
+  // clang-format on
 
   std::vector<PieceOrients> pieceOrients;
   for (const auto &p : pieces) {
@@ -421,15 +409,15 @@ int main() {
                  [](PieceOrients &s) { return &s; });
 
   // Dump all pieces
-  // for (const auto &s : pieceOrients) {
-  //   std::cout << "Piece set: " << s.size() << std::endl;
-  //   for (const auto &p : s) {
-  //     std::cout << "  " << p << std::endl;
-  //   }
-  // }
+  for (const auto &s : pieceOrients) {
+    std::cout << "Piece set: " << s.size() << std::endl;
+    for (const auto &p : s) {
+      std::cout << "  " << p << std::endl;
+    }
+  }
 
   // Search for solutions
-  Box box(4, 4, 2);
+  Box box(8, 8, 1);
   std::vector<Box> solutions;
   /* searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions); */
   searchNextCellPiece(0, pieceOrientPtrs, box, solutions);
