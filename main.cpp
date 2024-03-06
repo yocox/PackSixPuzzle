@@ -6,8 +6,9 @@
 #include <utility>
 #include <vector>
 
-enum PieceID { NONE, A, B, C, D, E, F };
-const char *PieceNames[] = {".", "A", "B", "C", "D", "E", "F"};
+enum PieceID { NONE, H7, O6, F5, Y5, V5, U5, N5, L5, Z5, O4, T4, Z4, L4 };
+const char *PieceNames[] = {".",  "H7", "O6", "F5", "Y5", "V5", "U5",
+                            "N5", "L5", "Z5", "O4", "T4", "Z4", "L4"};
 
 // A point is a (x, y, z) coordinate
 struct Point {
@@ -161,10 +162,10 @@ PieceOrients allRotations(Piece p) {
   p.rotateZ(); result.insert(p);
   // clang-format on
 
-  // The box has height 2, so we can filter out some pieces with height > 2
+  // The box has height 1, so we can filter out some pieces with height > 1
   PieceOrients filtered;
   for (const auto &p : result) {
-    if (p.size_.z <= 2) {
+    if (p.size_.z <= 1) {
       filtered.insert(p);
     }
   }
@@ -400,15 +401,25 @@ Point operator""_p(const char *str, std::size_t len) {
   return {str[0] - '0', str[1] - '0', str[2] - '0'};
 }
 
+// clang-format off
 int main() {
+  // clang-format off
   std::vector<Piece> pieces{
-      Piece(C, {"000"_p, "100"_p, "110"_p, "111"_p}),
-      Piece(D, {"000"_p, "100"_p, "200"_p, "001"_p}),
-      Piece(B, {"000"_p, "100"_p, "200"_p, "210"_p, "211"_p}),
-      Piece(F, {"000"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
-      Piece(A, {"000"_p, "100"_p, "010"_p, "001"_p, "101"_p, "011"_p}),
-      Piece(E, {"000"_p, "100"_p, "200"_p, "010"_p, "110"_p, "210"_p, "201"_p}),
+      Piece(H7, {"000"_p, "020"_p, "100"_p, "110"_p, "120"_p, "200"_p, "220"_p}),
+      Piece(O6, {"000"_p, "010"_p, "020"_p, "100"_p, "110"_p, "120"_p}),
+      Piece(F5, {"000"_p, "010"_p, "110"_p, "120"_p, "210"_p}),
+      Piece(Y5, {"000"_p, "010"_p, "020"_p, "030"_p, "110"_p}),
+      Piece(V5, {"000"_p, "010"_p, "020"_p, "100"_p, "200"_p}),
+      Piece(U5, {"000"_p, "020"_p, "100"_p, "110"_p, "120"_p}),
+      Piece(N5, {"000"_p, "010"_p, "020"_p, "120"_p, "130"_p}),
+      Piece(L5, {"000"_p, "010"_p, "020"_p, "030"_p, "100"_p}),
+      Piece(Z5, {"000"_p, "010"_p, "110"_p, "210"_p, "220"_p}),
+      Piece(O4, {"000"_p, "010"_p, "100"_p, "110"_p}),
+      Piece(T4, {"000"_p, "010"_p, "020"_p, "110"_p}),
+      Piece(Z4, {"000"_p, "010"_p, "110"_p, "120"_p}),
+      Piece(L4, {"000"_p, "010"_p, "020"_p, "100"_p}),
   };
+  // clang-format on
 
   std::vector<PieceOrients> pieceOrients;
   for (const auto &p : pieces) {
@@ -421,15 +432,15 @@ int main() {
                  [](PieceOrients &s) { return &s; });
 
   // Dump all pieces
-  // for (const auto &s : pieceOrients) {
-  //   std::cout << "Piece set: " << s.size() << std::endl;
-  //   for (const auto &p : s) {
-  //     std::cout << "  " << p << std::endl;
-  //   }
-  // }
+  for (const auto &s : pieceOrients) {
+    std::cout << "Piece set: " << s.size() << std::endl;
+    for (const auto &p : s) {
+      std::cout << "  " << p << std::endl;
+    }
+  }
 
   // Search for solutions
-  Box box(4, 4, 2);
+  Box box(8, 8, 1);
   std::vector<Box> solutions;
   /* searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions); */
   searchNextCellPiece(0, pieceOrientPtrs, box, solutions);
