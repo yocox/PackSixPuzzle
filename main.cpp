@@ -423,7 +423,11 @@ int main() {
 
   std::vector<PieceOrients> pieceOrients;
   for (const auto &p : pieces) {
-    pieceOrients.push_back(allRotations(p));
+    if (p.id_ == F5) {
+      pieceOrients.push_back(std::set<Piece>{p});
+    } else {
+      pieceOrients.push_back(allRotations(p));
+    }
   }
 
   std::vector<PieceOrientsPtr> pieceOrientPtrs;
