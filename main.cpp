@@ -287,12 +287,31 @@ struct Box {
     }
     os << std::endl;
   }
+  
+  Position calculateNextInitPos(const Position& p) {
+    Position result = p;
+    result.z++;
+    if (result.z == this->z) {
+      result.z = 0;
+      result.y++;
+      if (result.y >= this->y) {
+        result.y = 0;
+        result.x++;
+      }
+    }
+    return result;
+  }
+  
 
-  // TODO(yoco): an optional initial position
-  Position findFirstEmptyCell() {
-    for (int x = 0; x < this->x; ++x) {
-      for (int y = 0; y < this->y; ++y) {
-        for (int z = 0; z < this->z; ++z) {
+  Position findFirstEmptyCell(const Position& initPos) {
+    int x = initPos.x;
+    int y = initPos.y;
+    int z = initPos.z;
+    goto inner;
+    for (x = 0; x < this->x; ++x) {
+      for (y = 0; y < this->y; ++y) {
+        for (z = 0; z < this->z; ++z) {
+          inner:
           if (!isOccupied(x, y, z)) {
             return {x, y, z};
           }
@@ -317,40 +336,9 @@ struct Box {
   }
 };
 
-void searchOnePieceAllPosOrient(const std::vector<PieceOrients> &pieceOrients,
-                                int currentPieceOrientsIdx, Box &box,
-                                std::vector<Box> &solutions) {
-  // Found a solution
-  if (currentPieceOrientsIdx == pieceOrients.size()) {
-    solutions.push_back(box);
-    return;
-  }
-
-  // For one piece, try all orientations
-  for (const auto &p : pieceOrients[currentPieceOrientsIdx]) {
-    // For all positions in the box
-    for (int x = 0; x < box.x - p.size_.x + 1; ++x) {
-      for (int y = 0; y < box.y - p.size_.y + 1; ++y) {
-        for (int z = 0; z < box.z - p.size_.z + 1; ++z) {
-          // Try to push the piece into the box
-          bool success = box.tryPushPieceTo(p, {x, y, z});
-          if (success) {
-            // search for the next piece
-            searchOnePieceAllPosOrient(pieceOrients, currentPieceOrientsIdx + 1,
-                                       box, solutions);
-            // Pop the piece
-            box.popPiece();
-          }
-        }
-      }
-    }
-  }
-}
-
-// TODO(yoco): an optional initial position
 void searchNextCellPiece(int level,
                          const std::vector<PieceOrientsPtr> &pieceOrientPtrs,
-                         Box &box, std::vector<Box> &solutions) {
+                         Box &box, const Position& initPos, std::vector<Box> &solutions) {
   auto printIndent = [level]() {
     for (int i = 0; i < level; ++i) {
       std::cout << "  ";
@@ -364,8 +352,8 @@ void searchNextCellPiece(int level,
   }
 
   // Find next empty cell in the box
-  // TODO(yoco): an optional initial position
-  Position emptyCell = box.findFirstEmptyCell();
+  Position emptyCell = box.findFirstEmptyCell(initPos);
+  Position nextInitPos = box.calculateNextInitPos(initPos);
   // printIndent();
   // std::cout << "Empty cell pos: " << emptyCell << std::endl;
 
@@ -388,7 +376,7 @@ void searchNextCellPiece(int level,
         std::vector<PieceOrientsPtr> newPieceOrients = pieceOrientPtrs;
         newPieceOrients.erase(newPieceOrients.begin() + i);
         // search for the next piece
-        searchNextCellPiece(level + 1, newPieceOrients, box, solutions);
+        searchNextCellPiece(level + 1, newPieceOrients, box, nextInitPos, solutions);
         // Pop the piece
         box.popPiece();
       }
@@ -446,8 +434,7 @@ int main() {
   // Search for solutions
   Box box(8, 8, 1);
   std::vector<Box> solutions;
-  /* searchOnePieceAllPosOrient(pieceOrients, 0, box, solutions); */
-  searchNextCellPiece(0, pieceOrientPtrs, box, solutions);
+  searchNextCellPiece(0, pieceOrientPtrs, box, {0, 0, 0}, solutions);
   std::cout << "Found " << solutions.size() << " solutions" << std::endl;
   std::cout << solutions[0];
 }
